@@ -1,2 +1,1 @@
-checkpoint/*
-!checkpoint/
+checkpoint/*.bin
