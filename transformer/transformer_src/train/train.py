@@ -1,4 +1,5 @@
 import argparse
+import os
 
 from transformer_src.model import Transformer
 from transformer_src.datasets import ChEngDataset, ChEngDataLoader
@@ -52,6 +53,8 @@ def train_model(args):
             epoch_loss += loss.item()
         print(f'Epoch[{epoch + 1}|{args.num_epochs}], Loss:{epoch_loss / len(dataloader)}')
 
+    save_dir = os.path.dirname(args.model_save_path)
+    os.makedirs(save_dir, exist_ok=True)
     # Save model
     torch.save(model.state_dict(), args.model_save_path)
 
