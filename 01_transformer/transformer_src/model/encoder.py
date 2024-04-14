@@ -22,22 +22,22 @@ class EncoderLayer(nn.Module):
         :param dropout: dropout probability
         """
         super().__init__()
-        self.attention = MultiHeadAttention(hidden_size=hidden_size, n_heads=n_heads)
+        self.attention = MultiHeadAttention(hidden_size=hidden_size, n_heads=n_heads, causal=False)
         self.add_norm1 = AddNorm(hidden_size=hidden_size, dropout=dropout)
         self.ffn = PositionwiseFeedForward(hidden_size=hidden_size,
                                            ffn_hidden_size=ffn_hidden_size,
                                            dropout=dropout)
         self.add_norm2 = AddNorm(hidden_size=hidden_size, dropout=dropout)
 
-    def forward(self, x, src_mask):
+    def forward(self, x: torch.Tensor, attention_mask: torch.Tensor):
         """
         forward method for a single encoder layer
         :param x: torch.Size([batch, seq_len, hidden_size])
-        :param src_mask: mask some part of the score, usually for padding token
+        :param attention_mask: mask some part of the score, usually for padding token, torch.Size([batch, seq_len])
         :return: torch.Size([batch, seq_len, hidden_size])
         """
         # 1.compute attention
-        y = self.attention(q=x, k=x, v=x, mask=src_mask)
+        y = self.attention(q=x, attention_mask=attention_mask)
 
         # 2. add and norm
         x = self.add_norm1(x, y)
@@ -79,16 +79,16 @@ class Encoder(nn.Module):
                              n_heads=n_heads, dropout=dropout)
             )
 
-    def forward(self, x, src_mask):
+    def forward(self, x: torch.Tensor, attention_mask: torch.Tensor):
         """
         forward method for decoder, input a batch of sequence token, output its hidden state
         :param x: torch.Size([batch, seq_len])
-        :param src_mask: mask some part of attention score
+        :param attention_mask: mask some part of attention score
         :return: torch.Size([batch, seq_len, hidden_size])
         """
         x = self.embedding(x)
         for layer in self.layers:
-            x = layer(x, src_mask)
+            x = layer(x, attention_mask)
         return x
 
 
@@ -96,14 +96,15 @@ if __name__ == '__main__':
     # testing code
     # if you want to run this script's main method
     # you need change relative import "from .model_components import *"  into "from model_components import *"
-    batch, seq_len, hidden_size = 16, 500, 1024
+    batch, seq_len, hidden_size = 2, 3, 4
     vocab_size, max_len, ffn_hidden_size = 32000, 512, 2048
-    n_heads, n_layers = 8, 4
+    n_heads, n_layers = 2, 4
     encoder = Encoder(vocab_size, max_len, hidden_size, ffn_hidden_size,
                       n_heads, n_layers)
 
     X = torch.ones(batch, seq_len).long()
-    mask = torch.zeros(batch, n_heads, seq_len, seq_len)
+    mask = torch.zeros(batch, seq_len)
     print(X.shape)
     output = encoder(X, mask)
+    print(output)
     print(output.shape)

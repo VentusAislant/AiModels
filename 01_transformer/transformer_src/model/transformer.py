@@ -57,20 +57,17 @@ class Transformer(nn.Module):
         :param tgt: torch.Size([batch_size, seq_len])
         :return: torch.Size([batch_size, vocab_size])
         """
-        src_mask = self.get_src_mask(src)
-        tgt_mask = self.get_tgt_mask(tgt)
-        enc_output = self.encoder(src, src_mask)
-        output = self.decoder(x=tgt, encoder_output=enc_output,
-                              tgt_mask=tgt_mask, src_mask=src_mask)
+        src_mask = self.get_attention_mask(src)
+        tgt_mask = self.get_attention_mask(tgt)
+        enc_output = self.encoder(x=src, attention_mask=src_mask)
+        output = self.decoder(
+            x=tgt,
+            attention_mask=tgt_mask,
+            encoder_output=enc_output,
+            encoder_output_mask=src_mask)
+
         return output
 
-    def get_src_mask(self, src: torch.Tensor):
-        src_mask = (src != self.pad_idx).unsqueeze(1).unsqueeze(2).to(self.device)
-        return src_mask
-
-    def get_tgt_mask(self, tgt: torch.Tensor):
-        tgt_len = tgt.shape[1]
-        tgt_pad_mask = (tgt != self.pad_idx).unsqueeze(1).unsqueeze(3).to(self.device)
-        tgt_sub_mask = torch.tril(torch.ones(tgt_len, tgt_len)).type(torch.ByteTensor).to(self.device)
-        tgt_mask = tgt_pad_mask & tgt_sub_mask
-        return tgt_mask
+    def get_attention_mask(self, t: torch.Tensor):
+        attention_mask = (t != self.pad_idx).to(self.device)
+        return attention_mask

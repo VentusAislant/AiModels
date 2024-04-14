@@ -1,5 +1,5 @@
 python transformer_src/train/train.py \
-    --device_id 1 \
+    --device_id 0 \
     --data_path './data/ch-eng/cmn.txt' \
     --tokenizer_path './data/ch-eng/tokenizer.model' \
     --n_heads 8 \
@@ -10,4 +10,4 @@ python transformer_src/train/train.py \
     --dropout 0.05 \
     --batch_size 64 \
     --learning_rate 1e-3 \
-    --num_epochs 5
+    --num_epochs 30

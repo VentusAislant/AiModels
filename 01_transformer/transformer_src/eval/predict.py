@@ -21,13 +21,13 @@ def predict(model, src_sentence, tokenizer: TransformerTokenizer, max_gen_len, d
         if pred == tokenizer.sp.eos_id() or len(output_seq) >= max_gen_len - 1:
             break
         output_seq.append(pred)
-        tgt = torch.cat((tgt, torch.tensor([[pred]], dtype=torch.long, device=device)), dim=1)  # 将预测结果拼接到目标序列中作为下一步输入
+        tgt = torch.cat((tgt, torch.tensor([[pred]], dtype=torch.long, device=device)), dim=1)
 
     return tokenizer.decode(torch.tensor(output_seq))
 
 
 if __name__ == '__main__':
-    device = 'cuda:1' if torch.cuda.is_available() else 'cpu'
+    device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
     tokenizer = TransformerTokenizer(model_path='./data/ch-eng/tokenizer.model')
 
@@ -41,7 +41,7 @@ if __name__ == '__main__':
                         device=device)
     model.load_state_dict(torch.load('./checkpoint/model.bin', map_location='cpu'))
     engs = ['go', "i lost", 'he\'s calm', 'i\'m home', 'i love you', 'we want to sleep.']
-    chs = ['走', '我迷路了', '他冷静', '我在家', '我愛你', '我们想睡']
+    chs = ['走', '我迷路了', '他很冷静', '我在家', '我愛你', '我們想要睡']
     for eng, ch in zip(engs, chs):
         # print(eng)
         translation = predict(

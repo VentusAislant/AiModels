@@ -22,32 +22,39 @@ class DecoderLayer(nn.Module):
         :param dropout: dropout probability
         """
         super().__init__()
-        self.masked_attention = MultiHeadAttention(hidden_size=hidden_size, n_heads=n_heads)
+        self.masked_attention = MultiHeadAttention(hidden_size=hidden_size, n_heads=n_heads, causal=True)
         self.add_norm1 = AddNorm(hidden_size=hidden_size, dropout=dropout)
-        self.attention = MultiHeadAttention(hidden_size=hidden_size, n_heads=n_heads)
+        self.attention = MultiHeadAttention(hidden_size=hidden_size, n_heads=n_heads, causal=False)
         self.add_norm2 = AddNorm(hidden_size=hidden_size, dropout=dropout)
         self.ffn = PositionwiseFeedForward(hidden_size=hidden_size,
                                            ffn_hidden_size=ffn_hidden_size,
                                            dropout=dropout)
         self.add_norm3 = AddNorm(hidden_size=hidden_size, dropout=dropout)
 
-    def forward(self, x, encoder_output, src_mask, tgt_mask):
+    def forward(
+            self,
+            x: torch.Tensor,
+            attention_mask: torch.Tensor,
+            encoder_output: torch.Tensor,
+            encoder_output_mask: torch.Tensor
+    ):
         """
         forward method for a single decoder layer
-        :param x: decoder input, torch.Size([batch, seq_len, hidden_size])
-        :param encoder_output: torch.Size([batch, seq_len, hidden_size])
-        :param src_mask: mask some part of the score, usually for padding token
-        :param tgt_mask: mask some part of the score, usually for preventing the model from seeing the previous time steps.
-        :return: torch.Size([batch, seq_len, hidden_size])
+        :param x: decoder input, torch.Size([batch, sql(q), hidden_size])
+        :param attention_mask: torch.Size([batch, sql(q)])
+        :param encoder_output: torch.Size([batch, sql(k), hidden_size])
+        :param encoder_output_mask: torch.Size([batch, sql(k)])
+        :return: torch.Size([batch, sql(k), hidden_size])
         """
         # 1. compute attention
-        y = self.masked_attention(q=x, k=x, v=x, mask=tgt_mask)
+        y = self.masked_attention(q=x, attention_mask=attention_mask)
 
         # 2. add and norm
         x = self.add_norm1(x, y)
 
         # 3. attention mixed encoder output and decoder hidden_state
-        y = self.attention(q=x, k=encoder_output, v=encoder_output, mask=src_mask)
+        y = self.attention(q=x, k=encoder_output, v=encoder_output,
+                           attention_mask=attention_mask, k_attention_mask=encoder_output_mask)
 
         # 4. add and norm
         x = self.add_norm2(x, y)
@@ -90,18 +97,26 @@ class Decoder(nn.Module):
             )
         self.dense = nn.Linear(hidden_size, vocab_size)
 
-    def forward(self, x, encoder_output, tgt_mask, src_mask):
+    def forward(
+            self,
+            x: torch.Tensor,
+            attention_mask: torch.Tensor,
+            encoder_output: torch.Tensor,
+            encoder_output_mask: torch.Tensor
+    ):
         """
-        forward method for decoder, input a batch of sequence token, output its hidden state
-        :param x: torch.Size([batch, seq_len])
-        :param encoder_output: torch.Size([batch, seq_len, hidden_size])
-        :param src_mask: mask some part of attention score
-        :return: torch.Size([batch, seq_len, vocab_size])
+        forward method for a single decoder layer
+        :param x: decoder input, torch.Size([batch, sql(q), hidden_size])
+        :param attention_mask: torch.Size([batch, sql(q)])
+        :param encoder_output: torch.Size([batch, sql(k), hidden_size])
+        :param encoder_output_mask: torch.Size([batch, sql(k)])
+        :return: torch.Size([batch, sql(k), hidden_size])
         """
         x = self.embedding(x)
         for layer in self.layers:
-            x = layer(x=x, encoder_output=encoder_output,
-                      src_mask=src_mask, tgt_mask=tgt_mask)
+            x = layer(x=x, attention_mask=attention_mask,
+                      encoder_output=encoder_output,
+                      encoder_output_mask=encoder_output_mask)
         output = self.dense(x)
         return output
 
@@ -113,9 +128,9 @@ if __name__ == '__main__':
     # you need change relative import "from .model_components import *"  into "from model_components import *"
 
     # testing code
-    batch, seq_len, hidden_size = 16, 500, 1024
+    batch, seq_len, hidden_size = 2, 3, 4
     vocab_size, max_len, ffn_hidden_size = 32000, 512, 2048
-    n_heads, n_layers = 8, 4
+    n_heads, n_layers = 2, 4
     encoder = Encoder(vocab_size, max_len, hidden_size, ffn_hidden_size,
                       n_heads, n_layers)
 
@@ -123,11 +138,11 @@ if __name__ == '__main__':
                       n_heads, n_layers)
 
     x = torch.ones(batch, seq_len).long()
-    mask = torch.zeros(batch, n_heads, seq_len, seq_len)
+    mask = torch.zeros(batch, seq_len)
     encoder_output = encoder(x, mask)
 
     dec_x = torch.ones(batch, seq_len).long() * 9
-    tgt_mask = torch.tril(torch.ones(seq_len, seq_len)).unsqueeze(0).unsqueeze(0)
+    tgt_mask = torch.ones(batch, seq_len)
     print(dec_x.shape)
-    output = decoder(dec_x, encoder_output, tgt_mask, mask)
+    output = decoder(dec_x, tgt_mask, encoder_output, mask)
     print(output.shape)
