@@ -14,17 +14,22 @@ import os
 
 class ChEngDataset(Dataset):
     # A Dateset class for ch-eng translation
-    def __init__(self, data_path, tokenizer_path=None):
+    def __init__(self, data_path, tokenizer_path=None, reverse: bool = False):
         """
         constructor of ChEngDataset, need construct tokenizer for it
         :param data_path: a path to txt file which have ch-eng text pair
+        :param tokenizer_path: path to tokenizer
+        :param reverse: if True, generate english to chinese data sample
         """
         self.all_txt = []
         with open(data_path, 'r', encoding='utf-8') as f:
             for line in f.readlines():
                 split_line = line.split('\t')
                 eng, ch = split_line[0], split_line[1].replace('\u200b', '').replace('\u3000', '')
-                self.all_txt.append((eng, ch))
+                if reverse:
+                    self.all_txt.append((ch, eng))
+                else:
+                    self.all_txt.append((eng, ch))
 
         if tokenizer_path is None:
             print('Constructing Tokenizer')
