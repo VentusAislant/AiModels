@@ -2,7 +2,7 @@
 
 #### **1. Project Overview:**
 
-- This project contains a basic implementation of Transformer(Attention is all you need) from scratch
+- This project contains a basic implementation of Transformer([Attention is all you need](https://arxiv.org/pdf/1706.03762.pdf)) from scratch
 - Only provides training on a small-scale machine translation (Chinese-English) dataset and a few example inferences, without providing evaluation code
 
 #### 2. Installation
