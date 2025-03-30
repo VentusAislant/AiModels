@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ventus_ai_impl"
+version = "1.0.0"
+description = "Implementation of Some classical AI models from scratch based Pytorch or OpenMMLab."
+authors = [
+    { "name" = "张浩杰(Ventus Aislant)", "email" = "ai.ventus.aislant@gmail.com" }
+]
+license = { text = "MIT" }
+requires-python = ">=3.9"
+keywords = ["CV", "NLP", "configuration-driven", "python&shell"]
+dependencies = []
+
+[project.urls]
+homepage = "https://github.com/VentusAislant/AiModels"
+repository = "https://github.com/VentusAislant/AiModels"
+issues = "https://github.com/VentusAislant/AiModels/issues"
+
+[project.optional-dependencies]
+dev = [""]
+docs = [""]
+
+[tool.black]
+line-length = 88
+target-version = ["py39", "py310"]
+
+[tool.isort]
+profile = "black"
